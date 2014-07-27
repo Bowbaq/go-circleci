@@ -2,6 +2,7 @@ package circleci
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -155,4 +156,57 @@ type Action struct {
 	Type          string
 	Index         uint
 	Status        string
+}
+
+func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild, error) {
+	var endpoint string
+	if username != "" && project != "" {
+		if branch != "" {
+			endpoint = fmt.Sprintf("project/%s/%s/tree/%s", username, project, branch)
+		} else {
+			endpoint = fmt.Sprintf("project/%s/%s", username, project)
+		}
+	} else {
+		endpoint = "recent-builds"
+	}
+
+	req, err := c.NewRequest("GET", endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var builds []DetailedBuild
+	if err := json.NewDecoder(resp.Body).Decode(&builds); err != nil {
+		return nil, err
+	} else {
+		return builds, nil
+	}
+}
+
+func (c *Client) BuildDetails(username, project string, build_num uint) (DetailedBuild, error) {
+	endpoint := fmt.Sprintf("project/%s/%s/%d", username, project, build_num)
+
+	req, err := c.NewRequest("GET", endpoint)
+	if err != nil {
+		return DetailedBuild{}, err
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return DetailedBuild{}, err
+	}
+	defer resp.Body.Close()
+
+	var build DetailedBuild
+	if err := json.NewDecoder(resp.Body).Decode(&build); err != nil {
+		return DetailedBuild{}, err
+	} else {
+		return build, nil
+	}
 }
