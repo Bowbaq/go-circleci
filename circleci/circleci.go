@@ -1,3 +1,4 @@
+// Package circleci provided an API client for CircleCI. For more details, see https://circleci.com/docs/api
 package circleci
 
 import (
@@ -16,9 +17,6 @@ const (
 
 // A Client manages communication with the CircleCI API.
 type Client struct {
-	// HTTP client used to communicate with the API.
-	client *http.Client
-
 	// A CircleCI API token to authenticate requests
 	token string
 
@@ -72,7 +70,7 @@ type Project struct {
 	VCSURL   string `json:"vcs_url"`
 	Followed bool
 	Username string
-	RepoName string
+	Reponame string
 	Branches map[string]Branch
 }
 
@@ -91,6 +89,8 @@ type Build struct {
 	Outcome     string
 }
 
+// Projects returns a list of Project followed by the authenticated API
+// user.
 func (c *Client) Projects() ([]Project, error) {
 	req, err := c.NewRequest("GET", "projects")
 	if err != nil {
@@ -106,9 +106,9 @@ func (c *Client) Projects() ([]Project, error) {
 	var projects []Project
 	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
 		return nil, err
-	} else {
-		return projects, nil
 	}
+
+	return projects, nil
 }
 
 type DetailedBuild struct {
@@ -158,6 +158,10 @@ type Action struct {
 	Status        string
 }
 
+// RecentBuilds returns a list of the last 30 detailed builds across all the projects
+// followed by the authenticated API user. If username and project are specified, only
+// builds for that repository (eg. github/github) are returned. If branch is specified,
+// only builds for that branch are returned (username and project must be specified).
 func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild, error) {
 	var endpoint string
 	if username != "" && project != "" {
@@ -184,13 +188,15 @@ func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild
 	var builds []DetailedBuild
 	if err := json.NewDecoder(resp.Body).Decode(&builds); err != nil {
 		return nil, err
-	} else {
-		return builds, nil
 	}
+
+	return builds, nil
 }
 
-func (c *Client) BuildDetails(username, project string, build_num uint) (DetailedBuild, error) {
-	endpoint := fmt.Sprintf("project/%s/%s/%d", username, project, build_num)
+// BuildDetails returns detailed information about a specific build. This includes runtime and
+// outcomes of the different steps of the build
+func (c *Client) BuildDetails(username, project string, buildNum uint) (DetailedBuild, error) {
+	endpoint := fmt.Sprintf("project/%s/%s/%d", username, project, buildNum)
 
 	req, err := c.NewRequest("GET", endpoint)
 	if err != nil {
@@ -206,7 +212,7 @@ func (c *Client) BuildDetails(username, project string, build_num uint) (Detaile
 	var build DetailedBuild
 	if err := json.NewDecoder(resp.Body).Decode(&build); err != nil {
 		return DetailedBuild{}, err
-	} else {
-		return build, nil
 	}
+
+	return build, nil
 }
