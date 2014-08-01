@@ -34,7 +34,7 @@ type Client struct {
 func NewClient(token string) *Client {
 	baseURL, _ := url.Parse(defaultBaseURL)
 
-	return &Client{client: http.DefaultClient, token: token, BaseURL: baseURL, UserAgent: userAgent}
+	return &Client{token: token, BaseURL: baseURL, UserAgent: userAgent}
 }
 
 // NewRequest creates an API request. A relative URL can be provided in path,
@@ -97,7 +97,7 @@ func (c *Client) Projects() ([]Project, error) {
 		return nil, err
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild
 		return nil, err
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (c *Client) BuildDetails(username, project string, buildNum uint) (Detailed
 		return DetailedBuild{}, err
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return DetailedBuild{}, err
 	}
