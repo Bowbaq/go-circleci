@@ -19,7 +19,7 @@ func main() {
 		fmt.Println(project.VCSURL)
 	}
 
-	recent_builds, err := circleci.RecentBuilds("", "", "")
+	recent_builds, err := circleci.RecentBuilds("", "", "", 30, 0)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -27,15 +27,15 @@ func main() {
 
 	fmt.Println("All builds", len(recent_builds))
 
-	alp_builds, err := circleci.RecentBuilds("Echo360", "alp", "")
+	github_builds, err := circleci.RecentBuilds("github", "github", "", 30, 0)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("ALP builds", len(alp_builds))
+	fmt.Println("GitHub builds", len(github_builds))
 
-	master_builds, err := circleci.RecentBuilds("Echo360", "alp", "master")
+	master_builds, err := circleci.RecentBuilds("github", "github", "master", 30, 0)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -43,7 +43,7 @@ func main() {
 
 	fmt.Println("Master builds", len(master_builds))
 
-	details, err := circleci.BuildDetails("Echo360", "alp", master_builds[0].BuildNum)
+	details, err := circleci.BuildDetails("github", "github", master_builds[0].BuildNum)
 
 	fmt.Println("Details", details)
 }
