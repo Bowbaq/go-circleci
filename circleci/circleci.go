@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -29,6 +30,9 @@ type Client struct {
 	UserAgent string
 }
 
+// Params represent additional query parameters to be passed to NewRequest
+type Params map[string]string
+
 // NewClient returns a new CircleCI API client. A token must be provided to
 // authenticate API requests. Tokens can be created at https://circleci.com/account/api
 func NewClient(token string) *Client {
@@ -40,7 +44,8 @@ func NewClient(token string) *Client {
 // NewRequest creates an API request. A relative URL can be provided in path,
 // in which case it is resolved relative to the BaseURL of the Client.
 // Relative URLs should always be specified without a preceding slash.
-func (c *Client) NewRequest(method, path string) (*http.Request, error) {
+// Additional query parameters can be provided in params.
+func (c *Client) NewRequest(method, path string, params *Params) (*http.Request, error) {
 	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err
@@ -48,13 +53,20 @@ func (c *Client) NewRequest(method, path string) (*http.Request, error) {
 
 	endpoint := c.BaseURL.ResolveReference(rel)
 
-	params, err := url.ParseQuery(endpoint.RawQuery)
-	if err != nil {
-		return nil, err
+	if params == nil {
+		params = &Params{
+			"circle-token": c.token,
+		}
+	} else {
+		(*params)["circle-token"] = c.token
 	}
 
-	params.Set("circle-token", c.token)
-	endpoint.RawQuery = params.Encode()
+	values := endpoint.Query()
+	for key, value := range *params {
+		values.Set(key, value)
+	}
+
+	endpoint.RawQuery = values.Encode()
 
 	req, err := http.NewRequest(method, endpoint.String(), nil)
 	if err != nil {
@@ -92,7 +104,7 @@ type Build struct {
 // Projects returns a list of Project followed by the authenticated API
 // user.
 func (c *Client) Projects() ([]Project, error) {
-	req, err := c.NewRequest("GET", "projects")
+	req, err := c.NewRequest("GET", "projects", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,11 +134,11 @@ type DetailedBuild struct {
 	Subject         string
 	Body            string
 	Why             string
-	DontBuild       string    `json:"dont_build"`
-	QueuedAt        time.Time `json:"queued_at"`
-	StartTime       time.Time `json:"start_time"`
-	StopTime        time.Time `json:"stop_time"`
-	BuildTimeMillis uint      `json:"build_time_millis"`
+	DontBuild       string     `json:"dont_build"`
+	QueuedAt        *time.Time `json:"queued_at,omitempty"`
+	StartTime       *time.Time `json:"start_time,omitempty"`
+	StopTime        *time.Time `json:"stop_time,omitempty"`
+	BuildTimeMillis uint       `json:"build_time_millis"`
 	Username        string
 	Reponame        string
 	Lifecycle       string
@@ -146,10 +158,10 @@ type Step struct {
 }
 
 type Action struct {
-	BashCommand   string    `json:"bash_command"`
-	RunTimeMillis uint      `json:"run_time_millis"`
-	StartTime     time.Time `json:"start_time"`
-	EndTime       time.Time `json:"end_time"`
+	BashCommand   string     `json:"bash_command"`
+	RunTimeMillis uint       `json:"run_time_millis"`
+	StartTime     *time.Time `json:"start_time,omitempty"`
+	EndTime       *time.Time `json:"end_time,omitempty"`
 	Name          string
 	Command       string
 	ExitCode      int `json:"exit_code"`
@@ -162,7 +174,9 @@ type Action struct {
 // followed by the authenticated API user. If username and project are specified, only
 // builds for that repository (eg. github/github) are returned. If branch is specified,
 // only builds for that branch are returned (username and project must be specified).
-func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild, error) {
+// If defined, limit and offset control which page of data is returned. They must both be
+// positive, and limit is capped at 100. Defaults are limit=30, offset=0
+func (c *Client) RecentBuilds(username, project, branch string, limit, offset uint) ([]DetailedBuild, error) {
 	var endpoint string
 	if username != "" && project != "" {
 		if branch != "" {
@@ -174,7 +188,14 @@ func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild
 		endpoint = "recent-builds"
 	}
 
-	req, err := c.NewRequest("GET", endpoint)
+	if limit > 100 {
+		limit = 100
+	}
+
+	req, err := c.NewRequest("GET", endpoint, &Params{
+		"limit":  strconv.Itoa(int(limit)),
+		"offset": strconv.Itoa(int(offset)),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +219,7 @@ func (c *Client) RecentBuilds(username, project, branch string) ([]DetailedBuild
 func (c *Client) BuildDetails(username, project string, buildNum uint) (DetailedBuild, error) {
 	endpoint := fmt.Sprintf("project/%s/%s/%d", username, project, buildNum)
 
-	req, err := c.NewRequest("GET", endpoint)
+	req, err := c.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return DetailedBuild{}, err
 	}
