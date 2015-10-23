@@ -153,9 +153,9 @@ type DetailedBuild struct {
 	Status          string
 	RetryOf         uint `json:"retry_of"`
 	Previous        struct {
-						Status   string
-						BuildNum uint `json:"build_num"`
-					}
+		Status   string
+		BuildNum uint `json:"build_num"`
+	}
 	Steps []Step
 }
 
@@ -244,12 +244,12 @@ func (c *Client) BuildDetails(username, project string, buildNum uint) (Detailed
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return DetailedBuild{}, err
 	}
 
 	var build DetailedBuild
 	if err := json.Unmarshal(body, &build); err != nil {
-		return nil, errors.New(string(body))
+		return DetailedBuild{}, errors.New(string(body))
 	}
 
 	return build, nil
