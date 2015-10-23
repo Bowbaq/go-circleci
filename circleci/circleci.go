@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+	"io/ioutil"
+	"errors"
 )
 
 const (
@@ -115,9 +117,14 @@ func (c *Client) Projects() ([]Project, error) {
 	}
 	defer resp.Body.Close()
 
-	var projects []Project
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
+	}
+
+	var projects []Project
+	if err := json.Unmarshal(body, &projects); err != nil {
+		return nil, errors.New(string(body))
 	}
 
 	return projects, nil
@@ -146,9 +153,9 @@ type DetailedBuild struct {
 	Status          string
 	RetryOf         uint `json:"retry_of"`
 	Previous        struct {
-		Status   string
-		BuildNum uint `json:"build_num"`
-	}
+						Status   string
+						BuildNum uint `json:"build_num"`
+					}
 	Steps []Step
 }
 
@@ -206,9 +213,14 @@ func (c *Client) RecentBuilds(username, project, branch string, limit, offset ui
 	}
 	defer resp.Body.Close()
 
-	var builds []DetailedBuild
-	if err := json.NewDecoder(resp.Body).Decode(&builds); err != nil {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
+	}
+
+	var builds []DetailedBuild
+	if err := json.Unmarshal(body, &builds); err != nil {
+		return nil, errors.New(string(body))
 	}
 
 	return builds, nil
@@ -230,9 +242,14 @@ func (c *Client) BuildDetails(username, project string, buildNum uint) (Detailed
 	}
 	defer resp.Body.Close()
 
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	var build DetailedBuild
-	if err := json.NewDecoder(resp.Body).Decode(&build); err != nil {
-		return DetailedBuild{}, err
+	if err := json.Unmarshal(body, &build); err != nil {
+		return nil, errors.New(string(body))
 	}
 
 	return build, nil
