@@ -78,14 +78,6 @@ func (c *Client) NewRequest(method, path string, params *Params) (*http.Request,
 	return req, nil
 }
 
-type Project struct {
-	VCSURL   string `json:"vcs_url"`
-	Followed bool
-	Username string
-	Reponame string
-	Branches map[string]Branch
-}
-
 type Branch struct {
 	PusherLogins   []string `json:"pusher_logins"`
 	LastNonSuccess Build    `json:"last_non_success"`
@@ -99,28 +91,6 @@ type Build struct {
 	VCSRevision string    `json:"vcs_revision"`
 	BuildNum    uint      `json:"build_num"`
 	Outcome     string
-}
-
-// Projects returns a list of Project followed by the authenticated API
-// user.
-func (c *Client) Projects() ([]Project, error) {
-	req, err := c.NewRequest("GET", "projects", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var projects []Project
-	if err := json.NewDecoder(resp.Body).Decode(&projects); err != nil {
-		return nil, err
-	}
-
-	return projects, nil
 }
 
 type DetailedBuild struct {
