@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Bowbaq/go-circleci/circleci"
+	"os"
 )
 
 func main() {
@@ -17,6 +18,25 @@ func main() {
 
 	for _, project := range projects {
 		fmt.Println(project.VCSURL)
+		for _, project := range projects {
+			artifacts, err := project.Artifacts(circleci, "master")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			for _, artifact := range artifacts {
+				file, err := artifact.Download(circleci, ".")
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				err = os.Remove(file)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+			}
+		}
 	}
 
 	recent_builds, err := circleci.RecentBuilds("", "", "", 30, 0)
