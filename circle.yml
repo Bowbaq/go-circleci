@@ -1,0 +1,10 @@
+dependencies:
+  post:
+    - go get -u github.com/golang/lint/golint
+
+test:
+  override:
+    - if [[ -n $(gofmt -l .) ]]; then echo "Please run gofmt"; exit 1; fi
+    - golint ./...
+    - go tool vet .
+    - go test -v -race ./...
