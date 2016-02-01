@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/Bowbaq/go-circleci/circleci"
 	"os"
+
+	"github.com/Bowbaq/go-circleci/circleci"
 )
 
 func main() {
