@@ -29,9 +29,9 @@ func (a *Artifact) Download(c *Client, folder string) (string, error) {
 		return "", err
 	}
 	defer out.Close()
-	req, err:=c.NewRequest("GET",a.URL,nil)
+	req, err := c.NewRequest("GET", a.URL, nil)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
